@@ -1,3 +1,4 @@
+*.swp
 example.py
 *.pyc
 __pycache__
