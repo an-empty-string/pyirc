@@ -1,5 +1,5 @@
-import net
-import event
+from . import net, event, user
+import string
 
 class IRCConnection:
     def __init__(self, sock, dispatcher):
@@ -7,6 +7,17 @@ class IRCConnection:
         self.dispatcher = dispatcher
         self.dispatcher.handlers.append(self._ecallback)
         self.callbacks = {}
+        self.connected = False
+        self.on("irc-001", self._set_connect_flag)
+
+    def _set_connect_flag(self, conn, event):
+        self.connected = True
+
+    def autojoin(self, *channels):
+        def join_channels(conn, event):
+            for i in channels:
+                conn.join(i)
+        self.on("irc-001", join_channels)
 
     def writeln(self, line):
         self.sock.send(bytes("%s\n" % line, 'utf-8'))
@@ -64,6 +75,17 @@ def parse_irc(dispatcher, e):
 def do_ping(cli, e):
     cli.writeln("PONG :%s" % e.info["args"][0])
 
+def do_parse_privmsg(conn, e):
+    target, message = e.info["args"]
+    source = user.User(e.info["prefix"])
+    info = {"to": target, "message": message, "from": source}
+    conn.dispatcher.dispatch(event.Event("message", **info))
+    if target[0] in string.punctuation: # This means that it is a channel
+        conn.dispatcher.dispatch(event.Event("message#", **info))
+        conn.dispatcher.dispatch(event.Event("message%s" % target, **info))
+    else:
+        conn.dispatcher.dispatch(event.Event("pm", **info))
+
 def do_irc_connect(host, port):
     sock = net.do_connect(host, port)
     dispatcher = net.do_dispatch_messages(sock)
@@ -71,5 +93,6 @@ def do_irc_connect(host, port):
 
     conn = IRCConnection(sock, dispatcher)
     conn.on("irc-ping", do_ping)
+    conn.on("irc-privmsg", do_parse_privmsg)
 
     return conn

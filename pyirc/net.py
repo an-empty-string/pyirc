@@ -1,4 +1,4 @@
-import event
+from . import event
 import socket
 import threading
 
