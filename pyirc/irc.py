@@ -38,11 +38,12 @@ class IRCConnection:
         types. Currently we only use this to figure out channel types for
         message parsing.
         """
-        # TODO hacky way of parsing -- be more general
-        ctypes = [i for i in event.args if i.startswith("CHANTYPES=")]
-        if len(ctypes) != 1:
-            return
-        self.servercaps["chantypes"] = ctypes[0][10:]
+        for i in event.args:
+            if "=" in i: # i.e. not a boolean true or false
+                key, value = i.split("=")
+                self.servercaps[key.lower()] = value
+            else:
+                self.servercaps[i.lower()] = True
 
     def _set_connect_flag(self, conn, event):
         """
@@ -154,8 +155,8 @@ def do_parse_privmsg(conn, e):
     source = user.User(e.info["prefix"]) 
     info = {"to": target, "message": message, "from": source}
     conn.dispatcher.dispatch(event.Event("message", **info))
-    if "chantypes" in conn.servercaps
-       and target[0] in conn.servercaps["chantypes"]
+    if "chantypes" in conn.servercaps \
+       and target[0] in conn.servercaps["chantypes"] \
        or target[0] in "#":
         conn.dispatcher.dispatch(event.Event("chanmessage", **info))
     else:
@@ -175,7 +176,7 @@ def do_parse_part(conn, e):
     """
     u = user.User(e.prefix)
     chan = e.args[0]
-    reason = None if len(e.args < 2) else e.args[1]
+    reason = None if len(e.args) < 2 else e.args[1]
     conn.dispatcher.dispatch(event.Event("part", user=u, channel=chan, reason=reason))
 
 def do_irc_connect(host, port=6667):

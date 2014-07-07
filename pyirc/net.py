@@ -12,7 +12,10 @@ def do_incoming_listen(socket, callback):
         while True:
             cbuf = ""
             while len(cbuf) == 0 or cbuf[-1] != '\n':
-                cbuf += s.recv(1).decode('utf-8')
+                try:
+                    cbuf += s.recv(1).decode('utf-8')
+                except:
+                    print (":( %s" % cbuf)
             c(cbuf)
 
     threading.Thread(target=loop, args=(socket, callback)).start()
