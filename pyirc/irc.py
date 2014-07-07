@@ -176,7 +176,7 @@ def do_parse_part(conn, e):
     reason = None if len(e.args < 2) else e.args[1]
     conn.dispatcher.dispatch(event.Event("part", user=u, channel=chan, reason=reason))
 
-def do_irc_connect(host, port):
+def do_irc_connect(host, port=6667):
     """
     Create a new IRCConnection given a host and port. Attach the needed event
     listeners.
@@ -192,32 +192,3 @@ def do_irc_connect(host, port):
     conn.register_callback("irc-part", do_parse_part)
 
     return conn
-            def wrapped_f(conn, event):
-                if (not filter) or filter(event):
-                    f(conn, event)
-            self.register_callback(event_type, wrapped_f)
-            return f
-        return wrap
-
-    def parse_005(self, conn, event):
-        """
-        Parse server 005 messages to gather server capabilities, i.e. channel
-        types. Currently we only use this to figure out channel types for
-        message parsing.
-        """
-        # TODO hacky way of parsing -- be more general
-        ctypes = [i for i in event.args if i.startswith("CHANTYPES=")]
-        if len(ctypes) != 1:
-            return
-        self.servercaps["chantypes"] = ctypes[0][10:]
-
-    def _set_connect_flag(self, conn, event):
-        """
-        This is mostly for setting the connected flag when we receive a 001
-        from the server (registered numeric).
-        """
-        self.connected = True
-
-    def autojoin(self, *channels):
-        """
-        Create a function 
