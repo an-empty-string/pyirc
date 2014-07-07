@@ -1,4 +1,5 @@
 from . import net, event, user
+from functools import wraps
 import string
 
 class IRCConnection:
@@ -9,8 +10,27 @@ class IRCConnection:
         self.callbacks = {}
         self.servercaps = {}
         self.connected = False
-        self.on("irc-001", self._set_connect_flag)
-        self.on("irc-005", self.parse_005)
+        self.register_callback("irc-001", self._set_connect_flag)
+        self.register_callback("irc-005", self.parse_005)
+
+    def on(self, event_type, filter=None):
+        """
+        Decorator form of register_callback. A filter can be passed to remove
+        undesired events before receiving them:
+
+            @conn.on("chanmessage", filter=lambda e: e.message[0] == "!")
+
+        would only allow messages starting with ! (perhaps a bot's command
+        character).
+        """
+        def wrap(f):
+            @wraps(f)
+            def wrapped_f(conn, event):
+                if (not filter) or filter(event):
+                    f(conn, event)
+            self.register_callback(event_type, wrapped_f)
+            return f
+        return wrap
 
     def parse_005(self, conn, event):
         """
@@ -18,6 +38,7 @@ class IRCConnection:
         types. Currently we only use this to figure out channel types for
         message parsing.
         """
+        # TODO hacky way of parsing -- be more general
         ctypes = [i for i in event.args if i.startswith("CHANTYPES=")]
         if len(ctypes) != 1:
             return
@@ -38,7 +59,7 @@ class IRCConnection:
         def join_channels(conn, event):
             for i in channels:
                 conn.join(i)
-        self.on("irc-001", join_channels)
+        self.register_callback("irc-001", join_channels)
 
     def writeln(self, line):
         """
@@ -47,7 +68,7 @@ class IRCConnection:
         """
         self.sock.send(bytes("%s\n" % line, 'utf-8'))
 
-    def register(self, nick, user, name, password=None):
+    def register(self, nick, user, realname, password=None):
         """
         Sends the server password, if any, followed by the NICK and USER
         commands with the given arguments.
@@ -56,10 +77,10 @@ class IRCConnection:
         self.user = user
         if password:
             self.writeln("PASS %s" % password)
-        self.writeln("USER %s . . :%s" % (user, name))
+        self.writeln("USER %s . . :%s" % (user, realname))
         self.writeln("NICK %s" % nick)
 
-    def on(self, type, func):
+    def register_callback(self, type, func):
         """
         Attaches a callback function with the signature (connection, event) for
         any events with the given type.
@@ -133,11 +154,27 @@ def do_parse_privmsg(conn, e):
     source = user.User(e.info["prefix"]) 
     info = {"to": target, "message": message, "from": source}
     conn.dispatcher.dispatch(event.Event("message", **info))
-    # TODO use servercaps
     if target[0] in conn.servercaps["chantypes"]:
         conn.dispatcher.dispatch(event.Event("chanmessage", **info))
     else:
         conn.dispatcher.dispatch(event.Event("pm", **info))
+
+def do_parse_join(conn, e):
+    """
+    Handle irc-join events and redispatch them as join events.
+    """
+    u = user.User(e.prefix)
+    chan = e.args[0]
+    conn.dispatcher.dispatch(event.Event("join", user=u, channel=chan))
+
+def do_parse_part(conn, e):
+    """
+    Handle irc-part events and redispatch them as part events.
+    """
+    u = user.User(e.prefix)
+    chan = e.args[0]
+    reason = None if len(e.args < 2) else e.args[1]
+    conn.dispatcher.dispatch(event.Event("part", user=u, channel=chan, reason=reason))
 
 def do_irc_connect(host, port):
     """
@@ -149,7 +186,38 @@ def do_irc_connect(host, port):
     dispatcher.handlers.append(parse_irc)
 
     conn = IRCConnection(sock, dispatcher)
-    conn.on("irc-ping", do_ping)
-    conn.on("irc-privmsg", do_parse_privmsg)
+    conn.register_callback("irc-ping", do_ping)
+    conn.register_callback("irc-privmsg", do_parse_privmsg)
+    conn.register_callback("irc-join", do_parse_join)
+    conn.register_callback("irc-part", do_parse_part)
 
     return conn
+            def wrapped_f(conn, event):
+                if (not filter) or filter(event):
+                    f(conn, event)
+            self.register_callback(event_type, wrapped_f)
+            return f
+        return wrap
+
+    def parse_005(self, conn, event):
+        """
+        Parse server 005 messages to gather server capabilities, i.e. channel
+        types. Currently we only use this to figure out channel types for
+        message parsing.
+        """
+        # TODO hacky way of parsing -- be more general
+        ctypes = [i for i in event.args if i.startswith("CHANTYPES=")]
+        if len(ctypes) != 1:
+            return
+        self.servercaps["chantypes"] = ctypes[0][10:]
+
+    def _set_connect_flag(self, conn, event):
+        """
+        This is mostly for setting the connected flag when we receive a 001
+        from the server (registered numeric).
+        """
+        self.connected = True
+
+    def autojoin(self, *channels):
+        """
+        Create a function 
