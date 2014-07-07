@@ -154,7 +154,9 @@ def do_parse_privmsg(conn, e):
     source = user.User(e.info["prefix"]) 
     info = {"to": target, "message": message, "from": source}
     conn.dispatcher.dispatch(event.Event("message", **info))
-    if target[0] in conn.servercaps["chantypes"]:
+    if "chantypes" in conn.servercaps
+       and target[0] in conn.servercaps["chantypes"]
+       or target[0] in "#":
         conn.dispatcher.dispatch(event.Event("chanmessage", **info))
     else:
         conn.dispatcher.dispatch(event.Event("pm", **info))
