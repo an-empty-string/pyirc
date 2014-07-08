@@ -191,8 +191,10 @@ def do_parse_privmsg(conn, e):
     target, message = e.info["args"]
     source = user.User(e.info["prefix"]) 
     if message.startswith("\x01") and message.endswith("\x01"): # CTCP
+        print("ctcp get!")
         message = message[1:-1].split()
         command, args = message[0], message[1:]
+        print("%s %s (%s) from %s" % (command, repr(args), message, source))
         info = {"to": target, "command": command, "args": args, "user": source}
         conn.dispatcher.dispatch(event.Event("ctcp", **info))
         return
@@ -264,9 +266,10 @@ def do_ctcp_version(conn, e):
     """
     Handle CTCP VERSION requests.
     """
+    print("%s is the command" % e.command)
     if e.command.lower() != "version":
         return
-    conn.ctcp_reply(user.User(e.user).nick, "VERSION :%s" % conn.version)
+    conn.ctcp_reply(e.user.nick, "VERSION %s" % conn.version)
 
 def do_irc_connect(host="chat.freenode.net", port=6667):
     """

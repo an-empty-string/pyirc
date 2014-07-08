@@ -6,3 +6,6 @@ class User:
         except:
             # if something has no user or host, it is likely the ircd
             self.nick = self.user = self.host = "ircd"
+
+    def __repr__(self):
+        return "%s!%s@%s" % (self.nick, self.user, self.host)
