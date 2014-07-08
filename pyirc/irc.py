@@ -4,6 +4,7 @@ import string
 
 class IRCConnection:
     def __init__(self, sock, dispatcher):
+        self.version = "pyIRC framework"
         self.sock = sock
         self.dispatcher = dispatcher
         self.dispatcher.handlers.append(self._ecallback)
@@ -104,11 +105,47 @@ class IRCConnection:
         """
         self.writeln("JOIN %s" % channel)
 
+    def part(self, channel):
+        """
+        Leave a channel.
+        """
+        self.writeln("PART %s" % channel)
+
     def say(self, target, message):
         """
-        Send a message to a channel.
+        Send a message to a channel or user.
         """
         self.writeln("PRIVMSG %s :%s" % (target, message))
+
+    def action(self, target, message):
+        """
+        Send an action (i.e. /me) to a channel or user.
+        """
+        self.writeln("PRIVMSG %s :\x01ACTION %s\x01" % (target, message))
+
+    def notice(self, target, message):
+        """
+        Send a notice to a channel or user.
+        """
+        self.writeln("NOTICE %s :%s" % (target, message))
+
+    def ctcp(self, target, message):
+        """
+        Send a CTCP to a channel or user.
+        """
+        self.writeln("PRIVMSG %s :\x01%s\x01" % (target, message))
+
+    def ctcp_reply(self, target, message):
+        """
+        Send a CTCP reply to a channel or user.
+        """
+        self.writeln("NOTICE %s :\x01%s\x01" % (target, message))
+
+    def mode(self, target, modes, *args):
+        """
+        Set modes on an IRC channel.
+        """
+        self.writeln("MODE %s %s %s" % (target, modes, " ".join(args)))
 
 def parse_irc(dispatcher, e):
     """
@@ -149,18 +186,53 @@ def do_ping(cli, e):
 def do_parse_privmsg(conn, e):
     """
     Handle irc-privmsg events and redispatch them as message events, as well
-    as chanmessage or pm depending on the message type.
+    as pubmessage or privmessage depending on the message type. Handle CTCP.
     """
     target, message = e.info["args"]
     source = user.User(e.info["prefix"]) 
-    info = {"to": target, "message": message, "from": source}
+    if message.startswith("\x01") and message.endswith("\x01"): # CTCP
+        message = message[1:-1].split()
+        command, args = message[0], message[1:]
+        info = {"to": target, "command": command, "args": args, "user": source}
+        conn.dispatcher.dispatch(event.Event("ctcp", **info))
+        return
+
+    info = {"to": target, "message": message, "user": source}
     conn.dispatcher.dispatch(event.Event("message", **info))
-    if "chantypes" in conn.servercaps \
-       and target[0] in conn.servercaps["chantypes"] \
-       or target[0] in "#":
-        conn.dispatcher.dispatch(event.Event("chanmessage", **info))
+    if "chantypes" in conn.servercaps and target[0] in conn.servercaps["chantypes"]:
+        conn.dispatcher.dispatch(event.Event("pubmessage", **info))
+    elif "chantypes" not in conn.servercaps and target[0] in "#":
+        conn.dispatcher.dispatch(event.Event("pubmessage", **info))
+    elif "statusmsg" in conn.servercaps and target[0] in conn.servercaps["statusmsg"]:
+        conn.dispatcher.dispatch(event.Event("pubmessage", **info))
     else:
-        conn.dispatcher.dispatch(event.Event("pm", **info))
+        conn.dispatcher.dispatch(event.Event("privmessage", **info))
+
+def do_parse_notice(conn, e):
+    """
+    Handle irc-notice events and redispatch them as notice events, as well
+    as pubnotice or privnotice depending on the message type. Handle CTCP
+    replies.
+    """
+    target, message = e.info["args"]
+    source = user.User(e.info["prefix"])
+    if message.startswith("\x01") and message.endswith("\x01"): # CTCP reply
+        message = message[1:-1].split()
+        command, args = message[0], message[1:]
+        info = {"to": target, "command": command, "args": args, "user": source}
+        conn.dispatcher.dispatch(event.Event("ctcp-reply", **info))
+        return
+
+    info = {"to": target, "message": message, "user": source}
+    conn.dispatcher.dispatch(event.Event("notice", **info))
+    if "chantypes" in conn.servercaps and target[0] in conn.servercaps["chantypes"]:
+        conn.dispatcher.dispatch(event.Event("pubnotice", **info))
+    elif "chantypes" not in conn.servercaps and target[0] in "#":
+        conn.dispatcher.dispatch(event.Event("pubnotice", **info))
+    elif "statusmsg" in conn.servercaps and target[0] in conn.servercaps["statusmsg"]:
+        conn.dispatcher.dispatch(event.Event("pubnotice", **info))
+    else:
+        conn.dispatcher.dispatch(event.Event("privnotice", **info))
 
 def do_parse_join(conn, e):
     """
@@ -179,7 +251,24 @@ def do_parse_part(conn, e):
     reason = None if len(e.args) < 2 else e.args[1]
     conn.dispatcher.dispatch(event.Event("part", user=u, channel=chan, reason=reason))
 
-def do_irc_connect(host, port=6667):
+def do_parse_quit(conn, e):
+    """
+    Handle irc-quit events and redispatch them as quit events.
+    """
+    u = user.User(e.prefix)
+    chan = e.args[0]
+    reason = None if len(e.args) < 2 else e.args[1]
+    conn.dispatcher.dispatch(event.Event("quit", user=u, channel=chan, reason=reason))
+
+def do_ctcp_version(conn, e):
+    """
+    Handle CTCP VERSION requests.
+    """
+    if e.command.lower() != "version":
+        return
+    conn.ctcp_reply(user.User(e.user).nick, "VERSION :%s" % conn.version)
+
+def do_irc_connect(host="chat.freenode.net", port=6667):
     """
     Create a new IRCConnection given a host and port. Attach the needed event
     listeners.
@@ -191,7 +280,10 @@ def do_irc_connect(host, port=6667):
     conn = IRCConnection(sock, dispatcher)
     conn.register_callback("irc-ping", do_ping)
     conn.register_callback("irc-privmsg", do_parse_privmsg)
+    conn.register_callback("irc-notice", do_parse_notice)
     conn.register_callback("irc-join", do_parse_join)
     conn.register_callback("irc-part", do_parse_part)
+    conn.register_callback("irc-quit", do_parse_quit)
+    conn.register_callback("ctcp", do_ctcp_version)
 
     return conn

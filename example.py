@@ -1,12 +1,13 @@
 from pyirc import irc
 
-conn = irc.do_irc_connect("chat.freenode.net")
+conn = irc.do_irc_connect("localhost")
 conn.register(nick="testbot1", user="fwilson", realname="a PyIRC bot")
-conn.autojoin("##fwilson")
+conn.autojoin("#")
 
-@conn.on("chanmessage", filter=lambda e: e.message.startswith("!caps"))
+@conn.on("message", filter=lambda e: e.message.startswith("!caps"))
 def say_hello(conn, event):
     conn.say(event.to, repr(conn.servercaps))
+    print(repr(conn.servercaps))
 
 @conn.on("join")
 def greet_users(conn, event):
