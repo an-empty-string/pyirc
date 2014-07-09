@@ -10,6 +10,7 @@ class IRCConnection:
         self.dispatcher.handlers.append(self._ecallback)
         self.callbacks = {}
         self.servercaps = {}
+        self.data = {"nicks": {}}
         self.connected = False
         self.register_callback("irc-001", self._set_connect_flag)
         self.register_callback("irc-005", self.parse_005)
@@ -147,6 +148,12 @@ class IRCConnection:
         """
         self.writeln("MODE %s %s %s" % (target, modes, " ".join(args)))
 
+    def names(self, target):
+        """
+        Call NAMES on a channel to get the nick list.
+        """
+        self.writeln("NAMES %s" % target)
+
 def parse_irc(dispatcher, e):
     """
     Parses IRC messages from raw events and dispatches the parsed message as
@@ -271,6 +278,26 @@ def do_ctcp_version(conn, e):
         return
     conn.ctcp_reply(e.user.nick, "VERSION %s" % conn.version)
 
+def do_names_list(conn, e):
+    chan = e.args[2]
+    users = e.args[3].split()
+    if chan not in conn.data["nicks"]:
+        conn.data["nicks"][chan] = {}
+
+    for i in users:
+        # TODO use the ISUPPORT message
+        if i[0] in string.punctuation:
+            conn.data["nicks"][chan][i[1:]] = i[0]
+        else:
+            conn.data["nicks"][chan][i] = ""
+
+def do_names_end(conn, e):
+    chan = e.args[1]
+    if chan not in conn.data["nicks"]:
+        conn.data["nicks"][chan] = []
+    conn.dispatcher.dispatch(event.Event("names", chan=chan, nicks=conn.data["nicks"][chan]))
+    conn.data["nicks"][chan] = 0
+
 def do_irc_connect(host="chat.freenode.net", port=6667):
     """
     Create a new IRCConnection given a host and port. Attach the needed event
@@ -287,6 +314,8 @@ def do_irc_connect(host="chat.freenode.net", port=6667):
     conn.register_callback("irc-join", do_parse_join)
     conn.register_callback("irc-part", do_parse_part)
     conn.register_callback("irc-quit", do_parse_quit)
+    conn.register_callback("irc-353", do_names_list) # Names list addition
+    conn.register_callback("irc-366", do_names_end) # End of names list
     conn.register_callback("ctcp", do_ctcp_version)
 
     return conn

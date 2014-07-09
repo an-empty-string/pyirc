@@ -23,3 +23,7 @@ def greet_users(conn, event):
 @conn.on("part")
 def goodbye(conn, event):
     conn.say(event.channel, "%s left :(" % event.user.nick)
+
+@conn.on("names")
+def names_handler(conn, event):
+    print(event)
