@@ -10,6 +10,10 @@ def say_hello(conn, event):
     conn.say(event.to, repr(conn.servercaps))
     print(repr(conn.servercaps))
 
+@conn.on("message", filter=lambda e: e.message.startswith("!eval"))
+def eval_irc(conn, event):
+    conn.say(event.to, eval(" ".join(event.message.split()[1:])))
+
 @conn.on("message", filter=lambda e: e.message[0] == "!")
 def process_command(conn, event):
     t = event.message[1:].split()
