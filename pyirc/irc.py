@@ -166,6 +166,12 @@ class IRCConnection:
         """
         self.writeln("NAMES %s" % target)
 
+    def whois(self, target):
+        """
+        Call WHOIS on a nickname to get the user and host.
+        """
+        self.writeln("WHOIS %s" % target)
+
 def parse_irc(dispatcher, e):
     """
     Parses IRC messages from raw events and dispatches the parsed message as
@@ -289,6 +295,9 @@ def do_ctcp_version(conn, e):
         return
     conn.ctcp_reply(e.user.nick, "VERSION %s" % conn.version)
 
+def do_whois_result(conn, e):
+    conn.dispatcher.dispatch(event.Event("whois-result", **dict(zip(["nick", "user", "host"], e.args[1:4]))))
+
 def do_names_list(conn, e):
     chan = e.args[2]
     users = e.args[3].split()
@@ -325,6 +334,7 @@ def do_irc_connect(host="chat.freenode.net", port=6667):
     conn.register_callback("irc-join", do_parse_join)
     conn.register_callback("irc-part", do_parse_part)
     conn.register_callback("irc-quit", do_parse_quit)
+    conn.register_callback("irc-311", do_whois_result)
     conn.register_callback("irc-353", do_names_list) # Names list addition
     conn.register_callback("irc-366", do_names_end) # End of names list
     conn.register_callback("ctcp", do_ctcp_version)

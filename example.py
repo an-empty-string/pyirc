@@ -31,3 +31,7 @@ def goodbye(conn, event):
 @conn.on("names")
 def names_handler(conn, event):
     print(event)
+
+@conn.on("whois-result")
+def line_handler(conn, event):
+    print(event)
