@@ -11,7 +11,7 @@ class User:
                 self.nick = self.user = self.host = "ircd"
 
     @staticmethod
-    def from_nickname(self, conn, nickname, notify_callback=None):
+    def from_nickname(conn, nickname, notify_callback=None):
         """
         Create a new user object (with user and host) based on a nickname.
         This is done by calling whois from conn. A user might pass a function
