@@ -25,3 +25,6 @@ class Channel:
         """
         self._callbacks.append(notify_callback)
         self.conn.names(self.name)
+
+    def __repr__(self):
+        return "<Channel %s: %d users (%d ops, %d voices)>" % (self.name, len(self.users), len(self.ops), len(self.voices))
