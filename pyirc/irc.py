@@ -13,6 +13,7 @@ class IRCConnection:
         self.servercaps = {}
         self.data = {"nicks": {}}
         self.connected = False
+        self.channels = []
         self.register_callback("irc-001", self._set_connect_flag)
         self.register_callback("irc-005", self.parse_005)
 
@@ -273,6 +274,8 @@ def do_parse_join(conn, e):
     """
     u = user.User(e.prefix)
     chan = e.args[0]
+    if u.nick == conn.nick:
+        conn.channels.append(channel.Channel(chan))
     conn.dispatcher.dispatch(event.Event("join", user=u, channel=chan))
 
 def do_parse_part(conn, e):
