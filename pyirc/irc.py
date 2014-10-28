@@ -275,7 +275,7 @@ def do_parse_join(conn, e):
     u = user.User(e.prefix)
     chan = e.args[0]
     if u.nick == conn.nick:
-        conn.channels[chan] = (self, channel.Channel(chan))
+        conn.channels[chan] = channel.Channel(conn, chan)
     conn.dispatcher.dispatch(event.Event("join", user=u, channel=chan))
 
 def do_parse_part(conn, e):
