@@ -1,6 +1,6 @@
 MANIFEST
 *.swp
-*.pyc
+*.py[co]
 __pycache__
 dist
 build/
