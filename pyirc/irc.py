@@ -16,7 +16,7 @@ class IRCConnection:
         self.register_callback("irc-001", self._set_connect_flag)
         self.register_callback("irc-005", self.parse_005)
 
-    def on(self, event_type, filter=None):
+    def on(self, event_type, tag=None, filter=None):
         """
         Decorator form of register_callback. A filter can be passed to remove
         undesired events before receiving them:
@@ -31,7 +31,7 @@ class IRCConnection:
             def wrapped_f(conn, event):
                 if (not filter) or filter(event):
                     f(conn, event)
-            self.register_callback(event_type, wrapped_f)
+            self.register_callback(event_type, wrapped_f, tag)
             return f
         return wrap
 
@@ -87,14 +87,23 @@ class IRCConnection:
         self.writeln("USER %s . . :%s" % (user, realname))
         self.writeln("NICK %s" % nick)
 
-    def register_callback(self, type, func):
+    def register_callback(self, type, func, tag=None):
         """
         Attaches a callback function with the signature (connection, event) for
         any events with the given type.
         """
         if type not in self.callbacks:
             self.callbacks[type] = []
+        if tag is not None:
+            func.__dict__["callback_tag"] = tag
         self.callbacks[type].append(func)
+
+    def unregister_callbacks(self, tag):
+        """
+        Unregisters callbacks with a given tag.
+        """
+        for type in self.callbacks:
+            self.callbacks[type] = [i for i in self.callbacks[type] if i.__dict__.get("callback_tag", None) != tag]
 
     def _ecallback(self, dispatcher, event):
         """
@@ -281,9 +290,8 @@ def do_parse_quit(conn, e):
     Handle irc-quit events and redispatch them as quit events.
     """
     u = user.User(e.prefix)
-    chan = e.args[0]
-    reason = None if len(e.args) < 2 else e.args[1]
-    conn.dispatcher.dispatch(event.Event("quit", user=u, channel=chan, reason=reason))
+    reason = None if len(e.args) < 1 else e.args[0]
+    conn.dispatcher.dispatch(event.Event("quit", user=u, reason=reason))
 
 def do_ctcp_version(conn, e):
     """
