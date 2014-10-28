@@ -12,7 +12,7 @@ def say_hello(conn, event):
 
 @conn.on("message", filter=lambda e: e.message.startswith("!eval"))
 def eval_irc(conn, event):
-    conn.say(event.to, eval(" ".join(event.message.split()[1:])))
+    conn.say(event.to, eval(event.message.split(maxsplit=1)[1]))
 
 @conn.on("message", filter=lambda e: e.message[0] == "!")
 def process_command(conn, event):
