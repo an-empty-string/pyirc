@@ -1,4 +1,4 @@
-from . import net, event, user
+from . import net, event, user, channel
 from functools import wraps
 import string
 import sys
