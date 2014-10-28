@@ -10,6 +10,7 @@ class User:
                 # TODO this is hacky
                 self.nick = self.user = self.host = "ircd"
 
+    @staticmethod
     def from_nickname(self, conn, nickname, notify_callback=None):
         """
         Create a new user object (with user and host) based on a nickname.
