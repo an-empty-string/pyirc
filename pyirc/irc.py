@@ -67,7 +67,7 @@ class IRCConnection:
     def writeln(self, line):
         """
         Convert the line to a bytestring and add a newline. Then, send it to
-        the IRC server.
+        the IRC server. This is version-sensitive.
         """
         if sys.version_info.major > 2:
             self.sock.send(bytes("%s\n" % line, 'utf-8'))
