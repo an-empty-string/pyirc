@@ -50,8 +50,8 @@ class IRCConnection:
 
     def _set_connect_flag(self, conn, event):
         """
-        This is mostly for setting the connected flag when we receive a 001
-        from the server (registered numeric).
+        Sets self.connected upon receiving the server 001 message. This is
+        hooked in __init__, to the irc-001 event.
         """
         self.connected = True
 
