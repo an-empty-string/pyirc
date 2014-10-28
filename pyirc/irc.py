@@ -61,8 +61,7 @@ class IRCConnection:
         client to run it as soon as it is connected to the server.
         """
         def join_channels(conn, event):
-            for i in channels:
-                conn.join(i)
+            conn.join(",".join(channels))
         self.register_callback("irc-001", join_channels)
 
     def writeln(self, line):
