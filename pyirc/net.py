@@ -13,9 +13,9 @@ def do_incoming_listen(socket, callback):
             cbuf = ""
             while len(cbuf) == 0 or cbuf[-1] != '\n':
                 try:
-                    cbuf += s.recv(1).decode('utf-8')
+                    cbuf += str(s.recv(1024), "utf-8")
                 except:
-                    print (":( %s" % cbuf)
+                    print("Bad: %s" % cbuf)
             c(cbuf)
 
     threading.Thread(target=loop, args=(socket, callback)).start()
