@@ -13,8 +13,11 @@ class Event:
 
 class EventDispatcher:
     def __init__(self):
-        self.handlers = [] # handlers should be callable
+        self.handlers = []
 
     def dispatch(self, event):
+        """
+        Dispatch an Event to registered handlers.
+        """
         for i in self.handlers:
             i(self, event)
