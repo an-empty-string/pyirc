@@ -11,12 +11,18 @@ def do_incoming_listen(socket, callback):
     def loop(socket, callback):
         while True:
             cbuf = ""
-            while len(cbuf) == 0 or cbuf[-1] != '\n':
+            while len(cbuf) == 0 or ('\n' not in cbuf and '\r' not in cbuf):
                 try:
                     cbuf += str(socket.recv(1024), "utf-8")
                 except:
                     print("Bad: %s" % cbuf)
-            callback(cbuf)
+            if '\n' in cbuf:
+                cbuf = cbuf.split("\r\n")
+                for i in cbuf:
+                    if len(i.strip()) != 0:
+                        callback(i)
+            else:
+                callback(cbuf)
 
     threading.Thread(target=loop, args=(socket, callback)).start()
 
