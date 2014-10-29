@@ -328,6 +328,7 @@ def do_parse_mode(conn, e):
             mode_changes[m] = targets.pop(0)
             continue
         elif m in prefix_modes:
+            # TODO this doesn't work
             if m not in mode_changes:
                 mode_changes[m] = []
             target = targets.pop(0)
