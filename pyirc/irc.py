@@ -295,6 +295,13 @@ def do_parse_quit(conn, e):
     reason = None if len(e.args) < 1 else e.args[0]
     conn.dispatcher.dispatch(event.Event("quit", user=u, reason=reason))
 
+def do_parse_mode(conn, e):
+    """
+    Handle irc-mode events and redispatch them as mode events.
+    """
+    u = user.User(e.prefix)
+    print(e)
+
 def do_ctcp_version(conn, e):
     """
     Handle CTCP VERSION requests.
@@ -340,6 +347,7 @@ def do_irc_connect(host="chat.freenode.net", port=6667):
     conn.register_callback("irc-join", do_parse_join)
     conn.register_callback("irc-part", do_parse_part)
     conn.register_callback("irc-quit", do_parse_quit)
+    conn.register_callback("irc-mode", do_parse_mode)
     conn.register_callback("irc-311", do_whois_result)
     conn.register_callback("irc-353", do_names_list) # Names list addition
     conn.register_callback("irc-366", do_names_end) # End of names list
