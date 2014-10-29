@@ -323,7 +323,6 @@ def do_names_end(conn, e):
     chan = e.args[1]
     conn.data["nicks"][chan] = {}
     conn.dispatcher.dispatch(event.Event("names", chan=chan, nicks=conn.data["nicks"][chan]))
-    conn.data["nicks"][chan] = 0
 
 def do_irc_connect(host="chat.freenode.net", port=6667):
     """
