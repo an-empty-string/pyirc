@@ -321,8 +321,7 @@ def do_names_list(conn, e):
 
 def do_names_end(conn, e):
     chan = e.args[1]
-    if chan not in conn.data["nicks"]:
-        conn.data["nicks"][chan] = []
+    conn.data["nicks"][chan] = {}
     conn.dispatcher.dispatch(event.Event("names", chan=chan, nicks=conn.data["nicks"][chan]))
     conn.data["nicks"][chan] = 0
 
