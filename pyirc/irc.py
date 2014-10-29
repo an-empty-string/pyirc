@@ -313,8 +313,8 @@ def do_names_list(conn, e):
         conn.data["nicks"][chan] = {}
 
     for i in users:
-        # TODO use the ISUPPORT message
-        if i[0] in "~&@%+":
+        priv_prefixes = conn.servercaps["prefix"].split(")")[1]
+        if i[0] in priv_prefixes:
             conn.data["nicks"][chan][i[1:]] = i[0]
         else:
             conn.data["nicks"][chan][i] = ""
