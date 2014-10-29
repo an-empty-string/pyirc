@@ -337,7 +337,7 @@ def do_parse_mode(conn, e):
         else:
             mode_changes[m] = dir
 
-    conn.dispatcher.dispatch(event.Event("mode", user=u, channel=c, modes=mode_changes)
+    conn.dispatcher.dispatch(event.Event("mode", user=u, channel=c, modes=mode_changes))
 
 def do_ctcp_version(conn, e):
     """
