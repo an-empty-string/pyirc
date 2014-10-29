@@ -314,15 +314,15 @@ def do_names_list(conn, e):
 
     for i in users:
         # TODO use the ISUPPORT message
-        if i[0] in string.punctuation:
+        if i[0] in "~&@%+":
             conn.data["nicks"][chan][i[1:]] = i[0]
         else:
             conn.data["nicks"][chan][i] = ""
 
 def do_names_end(conn, e):
     chan = e.args[1]
-    conn.data["nicks"][chan] = {}
     conn.dispatcher.dispatch(event.Event("names", chan=chan, nicks=conn.data["nicks"][chan]))
+    conn.data["nicks"][chan] = {}
 
 def do_irc_connect(host="chat.freenode.net", port=6667):
     """
