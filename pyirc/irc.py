@@ -300,7 +300,44 @@ def do_parse_mode(conn, e):
     Handle irc-mode events and redispatch them as mode events.
     """
     u = user.User(e.prefix)
-    print(e)
+    prefix_modes = dict(zip(conn.servercaps["prefix"].split(")")[0][1:],
+                            conn.servercaps["prefix"].split(")")[1]))
+    hostmask_modes = conn.servercaps["chanmodes"].split(",")[0]
+    argument_modes = "jkl"
+
+    channel = e.args[0]
+    modes = e.args[1]
+    targets = e.args[2:]
+    mode_changes = {}
+
+    dir = True
+    for m in modes:
+        if m == "+":
+            dir = True
+            continue
+        if m == "-":
+            dir = False
+            continue
+        m = ("+" if dir else "-") + m
+        if m in hostmask_modes:
+            if m not in mode_changes:
+                mode_changes[m] = []
+            mode_changes[m].append(targets.pop(0))
+            continue
+        elif m in argument_modes:
+            mode_changes[m] = targets.pop(0)
+            continue
+        elif m in prefix_modes:
+            if m not in mode_changes:
+                mode_changes[m] = []
+            target = targets.pop(0)
+            mode_changes[m].append(target)
+            conn.channels[channel].users[target] = prefix_modes[m]
+            continue
+        else:
+            mode_changes[m] = dir
+
+    conn.dispatcher.dispatch(event.Event("mode", user=u, channel=c, modes=mode_changes)
 
 def do_ctcp_version(conn, e):
     """
