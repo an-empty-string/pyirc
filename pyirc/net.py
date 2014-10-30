@@ -17,7 +17,7 @@ def do_incoming_listen(socket, callback):
                 except:
                     print("Bad: %s" % cbuf)
             if '\n' in cbuf:
-                cbuf = cbuf.split("\r\n")
+                cbuf = cbuf.split("\n")
                 for i in cbuf:
                     if len(i.strip()) != 0:
                         callback(i)
