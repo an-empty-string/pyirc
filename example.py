@@ -1,5 +1,4 @@
 from pyirc import irc
-from glob import glob
 
 conn = irc.do_irc_connect("localhost")
 conn.register(nick="testbot1", user="fwilson", realname="a PyIRC bot")
