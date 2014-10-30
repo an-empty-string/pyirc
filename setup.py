@@ -7,6 +7,6 @@ setup(name='pyIRCframework',
       description='a Python IRC framework, with decorators and events!',
       author='Fox Wilson',
       author_email='fwilson@fwilson.me',
-      url='',
+      url='pyirc.fwilson.me',
       packages=['pyirc']
       )
