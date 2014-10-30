@@ -10,7 +10,7 @@ class IRCConnection:
         self.dispatcher = dispatcher
         self.dispatcher.handlers.append(self._ecallback)
         self.callbacks = {}
-        self.servercaps = {}
+        self.servercaps = {"prefix": "(qaohv)~&@%+"}
         self.data = {"nicks": {}}
         self.connected = False
         self.channels = {}
