@@ -19,10 +19,9 @@ def do_incoming_listen(socket, callback):
             if '\r\n' in cbuf:
                 cbuf = cbuf.split("\n")
                 for i in cbuf:
-                    if "\r" in cbuf and len(i.strip()) != 0:
-                        print(cbuf)
+                    if "\r" in i and len(i.strip()) != 0:
                         callback(i.strip())
-                    elif "\r" not in cbuf:
+                    elif "\r" not in i:
                         cbuf = i
                         break
             else:
