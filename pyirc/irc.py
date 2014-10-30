@@ -314,19 +314,16 @@ def do_parse_mode(conn, e):
     for m in modes:
         if m == "+":
             dir = True
-            continue
-        if m == "-":
+        elif m == "-":
             dir = False
-            continue
+
         m = ("+" if dir else "-") + m
         if m in hostmask_modes:
             if m not in mode_changes:
                 mode_changes[m] = []
             mode_changes[m].append(targets.pop(0))
-            continue
         elif m in argument_modes:
             mode_changes[m] = targets.pop(0)
-            continue
         elif m in prefix_modes:
             # TODO this doesn't work
             if m not in mode_changes:
@@ -334,7 +331,6 @@ def do_parse_mode(conn, e):
             target = targets.pop(0)
             mode_changes[m].append(target)
             conn.channels[channel].users[target] = prefix_modes[m]
-            continue
         else:
             mode_changes[m] = dir
 
