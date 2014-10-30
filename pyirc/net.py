@@ -16,12 +16,17 @@ def do_incoming_listen(socket, callback):
                     cbuf += str(socket.recv(1024), "utf-8")
                 except:
                     print("Bad: %s" % cbuf)
-            if '\n' in cbuf:
+            if '\r\n' in cbuf:
                 cbuf = cbuf.split("\n")
                 for i in cbuf:
-                    if len(i.strip()) != 0:
-                        callback(i)
+                    if "\r" in cbuf and len(i.strip()) != 0:
+                        print(cbuf)
+                        callback(i.strip())
+                    elif "\r" not in cbuf:
+                        cbuf = i
+                        break
             else:
+                print(cbuf)
                 callback(cbuf)
 
     threading.Thread(target=loop, args=(socket, callback)).start()
