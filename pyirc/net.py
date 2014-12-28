@@ -14,6 +14,7 @@ def do_incoming_listen(socket, callback):
             select.select([socket], [], [])
             cbuf = ""
             while len(cbuf) == 0 or ('\n' not in cbuf and '\r' not in cbuf):
+                select.select([socket], [], [])
                 try:
                     cbuf += str(socket.recv(1024), "utf-8")
                 except:
