@@ -1,6 +1,7 @@
 from . import event
 import socket
 import threading
+import select
 
 def do_connect(host, port):
     s = socket.socket()
@@ -10,6 +11,7 @@ def do_connect(host, port):
 def do_incoming_listen(socket, callback):
     def loop(socket, callback):
         while True:
+            select.select([socket], [], [])
             cbuf = ""
             while len(cbuf) == 0 or ('\n' not in cbuf and '\r' not in cbuf):
                 try:
