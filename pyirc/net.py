@@ -2,6 +2,7 @@ from . import event
 import socket
 import threading
 import select
+import time
 
 def do_connect(host, port):
     s = socket.socket()
@@ -15,8 +16,11 @@ def do_incoming_listen(socket, callback):
             cbuf = ""
             while len(cbuf) == 0 or ('\n' not in cbuf and '\r' not in cbuf):
                 select.select([socket], [], [])
+                old_buf_len = len(cbuf)
                 try:
                     cbuf += str(socket.recv(1024), "utf-8")
+                    if old_buf_len == len(cbuf):
+                        time.sleep(1)
                 except:
                     print("Bad: %s" % cbuf)
             if '\r\n' in cbuf:
