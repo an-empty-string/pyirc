@@ -1,3 +1,5 @@
+# Events
+
 ## raw
 Represents a raw line coming from the server.
 
